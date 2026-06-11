@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { listHistorico } from '../lib/localStore'
 import { format } from 'date-fns'
 import { History } from 'lucide-react'
 
@@ -16,17 +17,22 @@ export default function HistoryView({ exameId }) {
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    if (!supabase) { setCarregando(false); return }
     let ativo = true
     async function load() {
-      let query = supabase
-        .from('historico')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100)
-      if (exameId) query = query.eq('exame_id', exameId)
-
-      const { data } = await query
+      let data
+      if (!supabase) {
+        // Modo local
+        data = await listHistorico(exameId)
+        data = data.slice(0, 100)
+      } else {
+        let query = supabase
+          .from('historico')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100)
+        if (exameId) query = query.eq('exame_id', exameId)
+        data = (await query).data
+      }
       if (ativo) {
         setItens(data || [])
         setCarregando(false)

@@ -5,6 +5,7 @@ import { useExames } from './hooks/useExames'
 import { PASTAS, TIPOS_EXAME } from './lib/statusRules'
 import { exportarExcel, exportarBackupJSON, imprimirRelatorio } from './lib/exportUtils'
 import { supabase } from './lib/supabase'
+import { backupLocal } from './lib/localStore'
 
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
@@ -112,14 +113,22 @@ export default function App() {
   }
 
   const fazerBackup = async () => {
-    const documentos = supabase ? (await supabase.from('documentos').select('*')).data : []
-    const historico = supabase ? (await supabase.from('historico').select('*')).data : []
+    let documentos = []
+    let historico = []
+    if (supabase) {
+      documentos = (await supabase.from('documentos').select('*')).data || []
+      historico = (await supabase.from('historico').select('*')).data || []
+    } else {
+      const local = await backupLocal()
+      documentos = local.documentos
+      historico = local.historico
+    }
     exportarBackupJSON({
       gerado_em: new Date().toISOString(),
       gerado_por: nomeUsuario,
       exames: dados.exames.map(({ documentos, ...rest }) => rest), // eslint-disable-line no-unused-vars
-      documentos: documentos || [],
-      historico: historico || [],
+      documentos,
+      historico,
     })
   }
 

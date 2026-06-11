@@ -1,19 +1,25 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { LS_USUARIO } from '../lib/localStore'
 
 const AuthContext = createContext()
 
+function lerUsuarioLocal() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_USUARIO)) || null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
-  const [user, setUser] = useState(null)
-  // Se Supabase nao esta configurado, nao ha carregamento de sessao
+  // Em modo local, restaura o usuario salvo no dispositivo
+  const [user, setUser] = useState(() => (isSupabaseConfigured ? null : lerUsuarioLocal()))
   const [loading, setLoading] = useState(isSupabaseConfigured)
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) {
-      setLoading(false)
-      return
-    }
+    if (!isSupabaseConfigured || !supabase) return
 
     let mounted = true
 
@@ -58,8 +64,19 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
+  // Login do modo local: identifica o usuario apenas pelo nome (dados ficam no dispositivo)
+  const signInLocal = (nome) => {
+    const u = { id: 'local', email: '', user_metadata: { nome } }
+    localStorage.setItem(LS_USUARIO, JSON.stringify(u))
+    setUser(u)
+  }
+
   const signOut = async () => {
-    if (!supabase) return
+    if (!supabase) {
+      localStorage.removeItem(LS_USUARIO)
+      setUser(null)
+      return
+    }
     await supabase.auth.signOut()
   }
 
@@ -70,6 +87,7 @@ export function AuthProvider({ children }) {
     isSupabaseConfigured,
     signIn,
     signUp,
+    signInLocal,
     signOut,
     nomeUsuario: user?.user_metadata?.nome || user?.email || 'Usuario',
   }
