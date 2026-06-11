@@ -16,6 +16,7 @@ export default function HistoryView({ exameId }) {
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
+    if (!supabase) { setCarregando(false); return }
     let ativo = true
     async function load() {
       let query = supabase
