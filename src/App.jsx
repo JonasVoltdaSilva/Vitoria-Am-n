@@ -112,8 +112,8 @@ export default function App() {
   }
 
   const fazerBackup = async () => {
-    const { data: documentos } = await supabase.from('documentos').select('*')
-    const { data: historico } = await supabase.from('historico').select('*')
+    const documentos = supabase ? (await supabase.from('documentos').select('*')).data : []
+    const historico = supabase ? (await supabase.from('historico').select('*')).data : []
     exportarBackupJSON({
       gerado_em: new Date().toISOString(),
       gerado_por: nomeUsuario,

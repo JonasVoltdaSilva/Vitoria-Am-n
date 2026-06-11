@@ -6,17 +6,28 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // Se Supabase nao esta configurado, nao ha carregamento de sessao
+  const [loading, setLoading] = useState(isSupabaseConfigured)
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false)
+      return
+    }
+
     let mounted = true
 
     async function init() {
-      const { data } = await supabase.auth.getSession()
-      if (!mounted) return
-      setSession(data.session)
-      setUser(data.session?.user ?? null)
-      setLoading(false)
+      try {
+        const { data } = await supabase.auth.getSession()
+        if (!mounted) return
+        setSession(data.session)
+        setUser(data.session?.user ?? null)
+      } catch {
+        // falha silenciosa (ex: Supabase indisponivel)
+      } finally {
+        if (mounted) setLoading(false)
+      }
     }
     init()
 
@@ -32,11 +43,13 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signIn = async (email, password) => {
+    if (!supabase) throw new Error('Supabase nao configurado.')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
   }
 
   const signUp = async (email, password, nome) => {
+    if (!supabase) throw new Error('Supabase nao configurado.')
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -46,6 +59,7 @@ export function AuthProvider({ children }) {
   }
 
   const signOut = async () => {
+    if (!supabase) return
     await supabase.auth.signOut()
   }
 

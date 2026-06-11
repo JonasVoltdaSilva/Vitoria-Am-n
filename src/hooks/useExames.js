@@ -12,6 +12,7 @@ export function useExames(user) {
   const [error, setError] = useState(null)
 
   const carregar = useCallback(async () => {
+    if (!supabase) { setLoading(false); return }
     setLoading(true)
     setError(null)
     const { data, error } = await supabase
@@ -36,6 +37,7 @@ export function useExames(user) {
   // Registra uma entrada no historico de alteracoes
   const registrarHistorico = useCallback(
     async (exameId, acao, detalhes = '') => {
+      if (!supabase) return
       await supabase.from('historico').insert({
         exame_id: exameId,
         usuario: user?.user_metadata?.nome || user?.email || 'sistema',
@@ -48,6 +50,7 @@ export function useExames(user) {
 
   const criarExame = useCallback(
     async (payload) => {
+      if (!supabase) throw new Error('Supabase nao configurado.')
       const { data, error } = await supabase
         .from('exames')
         .insert(payload)
@@ -63,6 +66,7 @@ export function useExames(user) {
 
   const atualizarExame = useCallback(
     async (id, payload) => {
+      if (!supabase) throw new Error('Supabase nao configurado.')
       const { data, error } = await supabase
         .from('exames')
         .update(payload)
@@ -79,6 +83,7 @@ export function useExames(user) {
 
   const removerExame = useCallback(
     async (id, nome) => {
+      if (!supabase) throw new Error('Supabase nao configurado.')
       const { error } = await supabase.from('exames').delete().eq('id', id)
       if (error) throw error
       await registrarHistorico(id, 'EXCLUSAO', `Exame removido: ${nome || ''}`)
@@ -90,6 +95,7 @@ export function useExames(user) {
   // Upload de um documento (PDF/foto) vinculado ao exame
   const enviarDocumento = useCallback(
     async (exameId, file, tipo) => {
+      if (!supabase) throw new Error('Supabase nao configurado.')
       const ext = file.name.split('.').pop()
       const caminho = `${exameId}/${tipo}-${Date.now()}.${ext}`
 
@@ -117,6 +123,7 @@ export function useExames(user) {
 
   const removerDocumento = useCallback(
     async (doc) => {
+      if (!supabase) throw new Error('Supabase nao configurado.')
       await supabase.storage.from(STORAGE_BUCKET).remove([doc.caminho])
       const { error } = await supabase.from('documentos').delete().eq('id', doc.id)
       if (error) throw error
