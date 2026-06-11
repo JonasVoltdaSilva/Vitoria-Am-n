@@ -77,7 +77,15 @@ function idbDelete(id) {
 // Cache de Object URLs para nao recriar a cada render
 const urlCache = new Map()
 function urlDoBlob(id, blob) {
-  if (!urlCache.has(id)) urlCache.set(id, URL.createObjectURL(blob))
+  if (!urlCache.has(id)) {
+    try {
+      // Garante um Blob valido (alguns ambientes serializam o File em objeto)
+      const b = blob instanceof Blob ? blob : new Blob([blob])
+      urlCache.set(id, URL.createObjectURL(b))
+    } catch {
+      urlCache.set(id, '') // nao quebra a listagem se o arquivo estiver corrompido
+    }
+  }
   return urlCache.get(id)
 }
 
